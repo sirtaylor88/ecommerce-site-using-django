@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.shortcuts import reverse
+from django_countries.fields import CountryField
 
 
 CATEGORY_CHOICES = (
@@ -69,12 +70,16 @@ class OrderItem(models.Model):
         return self.get_total_item_price()
 
 class Order(models.Model):
-    user          = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                      on_delete=models.CASCADE)
-    items         = models.ManyToManyField(OrderItem)
-    start_date    = models.DateTimeField(auto_now_add=True)
-    ordered_date  = models.DateTimeField()
-    ordered       = models.BooleanField(default=False)
+    user                = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                            on_delete=models.CASCADE)
+    items               = models.ManyToManyField(OrderItem)
+    start_date          = models.DateTimeField(auto_now_add=True)
+    ordered_date        = models.DateTimeField()
+    ordered             = models.BooleanField(default=False)
+    billing_address     = models.ForeignKey("BillingAddress",
+                                            on_delete=models.SET_NULL,
+                                            blank=True,
+                                            null=True )
 
     def __str__(self):
         return self.user.username
@@ -84,3 +89,14 @@ class Order(models.Model):
         for order_item in self.items.all():
             total += order_item.get_final_price()
         return total
+
+class BillingAddress(models.Model):
+    user                = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                            on_delete=models.CASCADE)
+    street_address      = models.CharField(max_length=120)
+    apartment_address   = models.CharField(max_length=120)
+    country             = CountryField()
+    postal_code         = models.CharField(max_length=120)
+
+    def __str__(self):
+        return self.user.username
