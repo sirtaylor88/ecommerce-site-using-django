@@ -18,18 +18,16 @@
             <div class="card">
 
               <!--Card content-->
-              <form class="card-body">
-
-                <!--address-->
+              <form method="POST" class="card-body">
+                {% csrf_token %}
                 <div class="md-form mb-5">
-                  <input type="text" id="address" class="form-control" placeholder="1234 Main St">
-                  <label for="address" class="">Address</label>
+                  <label for="street_address">Address</label>
+                  {{ form.street_address }}
                 </div>
 
-                <!--address-2-->
                 <div class="md-form mb-5">
-                  <input type="text" id="address-2" class="form-control" placeholder="Apartment or suite">
-                  <label for="address-2" class="">Address 2 (optional)</label>
+                  <label for="apartment_address">Address 2 (optional)</label>
+                  {{ form.apartment_address }}
                 </div>
 
                 <!--Grid row-->
@@ -39,10 +37,7 @@
                   <div class="col-lg-4 col-md-12 mb-4">
 
                     <label for="country">Country</label>
-                    <select class="custom-select d-block w-100" id="country" required>
-                      <option value="">Choose...</option>
-                      <option>United States</option>
-                    </select>
+                    {{ form.country }}
                     <div class="invalid-feedback">
                       Please select a valid country.
                     </div>
@@ -54,9 +49,10 @@
                   <div class="col-lg-4 col-md-6 mb-4">
 
                     <label for="zip">Postal Code</label>
-                    <input type="text" class="form-control" id="zip" placeholder="" required>
+                    <!-- <input type="text" class="form-control" id="zip" placeholder="" required> -->
+                    {{ form.postal_code }}
                     <div class="invalid-feedback">
-                      Zip code required.
+                      Postal code required.
                     </div>
 
                   </div>
@@ -68,25 +64,23 @@
                 <hr>
 
                 <div class="custom-control custom-checkbox">
-                  <input type="checkbox" class="custom-control-input" id="same-address">
+                  <input {% if form.same_billing_address.value %}checked{% endif %} type="checkbox" class="custom-control-input" name="same_billing_address" id="same-address">
                   <label class="custom-control-label" for="same-address">Shipping address is the same as my billing address</label>
                 </div>
                 <div class="custom-control custom-checkbox">
-                  <input type="checkbox" class="custom-control-input" id="save-info">
+                  <input {% if form.save_info.value %}checked{% endif %} type="checkbox" class="custom-control-input" name="save_info" id="save-info">
                   <label class="custom-control-label" for="save-info">Save this information for next time</label>
                 </div>
 
                 <hr>
 
                 <div class="d-block my-3">
-                  <div class="custom-control custom-radio">
-                    <input id="credit" name="paymentMethod" type="radio" class="custom-control-input" checked required>
-                    <label class="custom-control-label" for="credit">Stripe</label>
-                  </div>
-                  <div class="custom-control custom-radio">
-                    <input id="paypal" name="paymentMethod" type="radio" class="custom-control-input" required>
-                    <label class="custom-control-label" for="paypal">Paypal</label>
-                  </div>
+                  {% for value, name in form.fields.payment_option.choices %}
+                    <div class="custom-control custom-radio">
+                      <input id="{{ name }}" name="payment_option" type="radio" class="custom-control-input" value="{{ value }}" required>
+                      <label class="custom-control-label" for="{{ name }}">{{ name }}</label>
+                    </div>
+                  {% endfor %}
                 </div>
                 <hr class="mb-4">
                 <button class="btn btn-primary btn-lg btn-block" type="submit">Continue to checkout</button>

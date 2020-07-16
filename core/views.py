@@ -5,6 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, View
 from django.utils import timezone
+
+from .forms import CheckoutForm
+
 from .models import Item, OrderItem, Order
 
 # Create your views here.
@@ -30,9 +33,22 @@ class ItemDetailView(DetailView):
     model         = Item
     template_name = "product.html"
 
-def checkout(request):
-    template = "checkout.html"
-    return render(request, template)
+class CheckoutView(View):
+    def get(self, *args, **kwargs):
+        # form
+        form = CheckoutForm()
+        context = {
+            "form": form
+        }
+        return render(self.request, "checkout.html", context)
+
+    def post(self, *args, **kwargs):
+        # form
+        form = CheckoutForm(self.request.POST or None)
+        if form.is_valid():
+            return redirect("core:checkout")
+        messages.warning(self.request, "Failed checkout")
+        return redirect("core:checkout")
 
 def products(request):
     template = "products.html"
