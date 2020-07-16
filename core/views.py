@@ -7,6 +7,8 @@ from .models import Item, OrderItem, Order
 # Create your views here.
 class HomeView(ListView):
     model = Item
+    paginate_by = 10
+    ordering = ['-id'] # minus = descending
     template_name = "home.html"
 
 class ItemDetailView(DetailView):
