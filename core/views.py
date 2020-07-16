@@ -2,10 +2,20 @@ from django.shortcuts import render
 from .models import Item
 
 # Create your views here.
-def item_list(request):
-    template = "home-page.html"
-    queryset = Item.objects.all()
+def home(request):
+    template = "home.html"
     context = {
-        "items": queryset
+        "items": Item.objects.all()
+    }
+    return render(request, template, context)
+
+def checkout(request):
+    template = "checkout.html"
+    return render(request, template)
+
+def products(request):
+    template = "products.html"
+    context = {
+        "items": Item.objects.all()
     }
     return render(request, template, context)

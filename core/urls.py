@@ -1,12 +1,15 @@
 from django.urls import path
 from django.views.generic import TemplateView
 from .views import (
-    item_list
+    home,
+    checkout,
+    products
 )
 
 app_name = "core"
 
 urlpatterns = [
-    path("", item_list, name="item-index"),
-    path("checkout/", TemplateView.as_view(template_name='checkout-page.html'), name="order-checkout"),
+    path("", home, name="home"),
+    path("checkout/", checkout, name="checkout"),
+    path("products/", products, name="products"),
 ]
