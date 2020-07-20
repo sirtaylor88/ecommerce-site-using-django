@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from .forms import CheckoutForm
 
-from .models import Item, OrderItem, Order
+from .models import Item, OrderItem, Order, BillingAddress
 
 # Create your views here.
 class HomeView(ListView):
@@ -45,10 +45,34 @@ class CheckoutView(View):
     def post(self, *args, **kwargs):
         # form
         form = CheckoutForm(self.request.POST or None)
-        if form.is_valid():
+        try:
+            order = Order.objects.get(user=self.request.user, ordered=False)
+            if form.is_valid():
+                street_address = form.cleaned_data.get("street_address")
+                apartment_address = form.cleaned_data.get("apartment_address")
+                country = form.cleaned_data.get("country")
+                postal_code = form.cleaned_data.get("postal_code")
+                # TODO: add functionality for these fields
+                # same_shipping_address = form.cleaned_data.get("same_shipping_address")
+                # save_info = form.cleaned_data.get("save_info")
+                payment_option = form.cleaned_data.get("payment_option")
+                billing_address = BillingAddress(
+                    user              = self.request.user,
+                    street_address    = street_address,
+                    apartment_address = apartment_address,
+                    country           = country,
+                    postal_code       = postal_code
+                )
+                billing_address.save()
+                order.billing_address = billing_address
+                order.save()
+                # TODO: Add redirect to the selected payment option
+                return redirect("core:checkout")
+            messages.warning(self.request, "Failed checkout")
             return redirect("core:checkout")
-        messages.warning(self.request, "Failed checkout")
-        return redirect("core:checkout")
+        except ObjectDoesNotExist:
+            messages.error(self.request, "You do not have an active order.")
+            return redirect("core:order-summary")
 
 def products(request):
     template = "products.html"
