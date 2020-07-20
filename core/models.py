@@ -85,7 +85,10 @@ class Order(models.Model):
                                             on_delete=models.SET_NULL,
                                             blank=True,
                                             null=True )
-
+    coupon              = models.ForeignKey("Coupon",
+                                            on_delete=models.SET_NULL,
+                                            blank=True,
+                                            null=True)
     def __str__(self):
         return self.user.username
 
