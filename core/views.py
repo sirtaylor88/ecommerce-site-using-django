@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required # for function based view
 from django.contrib.auth.mixins import LoginRequiredMixin # for class based view
@@ -9,6 +10,9 @@ from django.utils import timezone
 from .forms import CheckoutForm
 
 from .models import Item, OrderItem, Order, BillingAddress
+
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 # Create your views here.
 class HomeView(ListView):
@@ -76,7 +80,18 @@ class CheckoutView(View):
 
 class PaymentView(View):
     def get(self, *args, **kwargs):
+        # order
         return render(self.request, "payment.html")
+
+    def post(self, *args, **kwargs):
+        token = self.request.POST.get("stripeToken")
+        order = Qrder.objects.get(user=self.request.user, ordered=False)
+        stripe.Charge.create(
+            amount        = order.get_total() * 100, # value in cents
+            currency      = "eur",
+            source        = token
+        )
+        order.ordered = True
 
 def products(request):
     template = "products.html"
