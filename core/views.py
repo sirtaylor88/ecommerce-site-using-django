@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from .forms import CheckoutForm
 
-from .models import Item, OrderItem, Order, BillingAddress
+from .models import Item, OrderItem, Order, BillingAddress, Payment
 
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -70,10 +70,14 @@ class CheckoutView(View):
                 billing_address.save()
                 order.billing_address = billing_address
                 order.save()
-                # TODO: Add redirect to the selected payment option
-                return redirect("core:checkout")
-            messages.warning(self.request, "Failed checkout")
-            return redirect("core:checkout")
+
+                if payment_option == "S" :
+                    return redirect("core:payment", payment_option="stripe")
+                elif payment_option == "P":
+                    return redirect("core:payment", payment_option="paypal")
+                else:
+                    messages.warning(self.request, "Invalid payment option selected.")
+                    return redirect("core:checkout")
         except ObjectDoesNotExist:
             messages.error(self.request, "You do not have an active order.")
             return redirect("core:order-summary")
@@ -84,14 +88,54 @@ class PaymentView(View):
         return render(self.request, "payment.html")
 
     def post(self, *args, **kwargs):
-        token = self.request.POST.get("stripeToken")
-        order = Qrder.objects.get(user=self.request.user, ordered=False)
-        stripe.Charge.create(
-            amount        = order.get_total() * 100, # value in cents
-            currency      = "eur",
-            source        = token
-        )
-        order.ordered = True
+        order  = Order.objects.get(user=self.request.user, ordered=False)
+        token  = self.request.POST.get("stripeToken")
+
+        try:
+            charge = stripe.Charge.create(
+                amount        = int(order.get_total() * 100), # value in cents
+                currency      = "eur",
+                source        = token
+            )
+            # create the payment
+            payment = Payment(
+                stripe_charge_id = charge["id"],
+                user             = self.request.user,
+                amount           = order.get_total()
+            )
+            payment.save()
+
+            # assign the payment to the order
+            order.ordered = True
+            order.payment = payment
+            order.save()
+
+            messages.success(self.request, "Your order was successful.")
+            return redirect("/")
+
+        except stripe.error.CardError as e:
+            messages.error(self.request, f"{e.error.message}")
+            return redirect("/")
+        except stripe.error.RateLimitError as e:
+            messages.error(self.request, "Rate limit error")
+            return redirect("/")
+        except stripe.error.InvalidRequestError as e:
+            messages.error(self.request, f"{e.error.message}")
+            messages.error(self.request, "Invalid parameters")
+            return redirect("/")
+        except stripe.error.AuthenticationError as e:
+            messages.error(self.request, "Not authenticated")
+            return redirect("/")
+        except stripe.error.APIConnectionError as e:
+            messages.error(self.request, "Network error")
+            return redirect("/")
+        except stripe.error.StripeError as e:
+            messages.error(self.request, "Something went wrong. You are not charged. Please try again.")
+            return redirect("/")
+        except Exception as e:
+            # send an email to ourselves
+            messages.error(self.request, "A serious error occured. We have been notified")
+            return redirect("/")
 
 def products(request):
     template = "products.html"
