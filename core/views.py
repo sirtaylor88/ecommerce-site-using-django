@@ -11,8 +11,13 @@ from .forms import CheckoutForm, CouponForm
 
 from .models import Item, OrderItem, Order, BillingAddress, Payment, Coupon
 
+import random
+import string
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def create_ref_code():
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=20))
 
 # Create your views here.
 class HomeView(ListView):
@@ -126,6 +131,7 @@ class PaymentView(View):
                 item.save()
 
             order.ordered = True
+            order.ref_code = create_ref_code()
             order.payment = payment
             order.save()
 
