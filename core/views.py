@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from .forms import CheckoutForm, CouponForm, RefundForm
 
-from .models import Item, OrderItem, Order, BillingAddress, Payment, Coupon, Refund
+from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund
 
 import random
 import string
@@ -70,12 +70,13 @@ class CheckoutView(View):
                 # same_shipping_address = form.cleaned_data.get("same_shipping_address")
                 # save_info = form.cleaned_data.get("save_info")
                 payment_option = form.cleaned_data.get("payment_option")
-                billing_address = BillingAddress(
+                billing_address = Address(
                     user              = self.request.user,
                     street_address    = street_address,
                     apartment_address = apartment_address,
                     country           = country,
-                    postal_code       = postal_code
+                    postal_code       = postal_code,
+                    address_type      = "B"
                 )
                 billing_address.save()
                 order.billing_address = billing_address
