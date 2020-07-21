@@ -43,7 +43,8 @@ class CheckoutView(View):
             context = {
                 "form": CheckoutForm(),
                 "coupon_form": CouponForm(),
-                "order": Order.objects.get(user=self.request.user, ordered=False)
+                "order": Order.objects.get(user=self.request.user, ordered=False),
+                "DISPLAY_COUPON_FORM": True
             }
             return render(self.request, "checkout.html", context)
         except ObjectDoesNotExist:
@@ -90,7 +91,8 @@ class PaymentView(View):
     def get(self, *args, **kwargs):
         order  = Order.objects.get(user=self.request.user, ordered=False)
         context = {
-            "order": order
+            "order": order,
+            "DISPLAY_COUPON_FORM": False,
         }
         return render(self.request, "payment.html", context)
 

@@ -18,9 +18,9 @@
     <li class="list-group-item d-flex justify-content-between bg-light">
       <div class="text-success">
         <h6 class="my-0">Promo code</h6>
-        <small>EXAMPLECODE</small>
+        <small>{{ order.coupon.code }}</small>
       </div>
-      <span class="text-success">-$5</span>
+      <span class="text-success">-{{ order.coupon.amount }}€</span>
     </li>
     <li class="list-group-item d-flex justify-content-between">
       <span>Total (EUR)</span>
@@ -28,13 +28,15 @@
     </li>
   </ul>
 
-  <form action="{% url 'core:add-coupon' %}" method="POST" class="card p-2">
-    {% csrf_token %}
-    <div class="input-group">
-      {{ coupon_form.code }}
-      <div class="input-group-append">
-        <button class="btn btn-secondary btn-md waves-effect m-0" type="submit">Redeem</button>
+  {% if DISPLAY_COUPON_FORM %}
+    <form action="{% url 'core:add-coupon' %}" method="POST" class="card p-2">
+      {% csrf_token %}
+      <div class="input-group">
+        {{ coupon_form.code }}
+        <div class="input-group-append">
+          <button class="btn btn-secondary btn-md waves-effect m-0" type="submit">Redeem</button>
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
+  {% endif %}
 </div>

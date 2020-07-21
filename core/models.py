@@ -96,6 +96,7 @@ class Order(models.Model):
         total = 0
         for order_item in self.items.all():
             total += order_item.get_final_price()
+        total -= self.coupon.amount
         return total
 
 class BillingAddress(models.Model):
@@ -123,6 +124,7 @@ class Payment(models.Model):
 
 class Coupon(models.Model):
     code              = models.CharField(max_length=15)
+    amount            = models.DecimalField(decimal_places=2, max_digits=10)
 
     def __str__(self):
         return self.code
