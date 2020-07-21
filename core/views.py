@@ -30,7 +30,7 @@ class OrderSummaryView(LoginRequiredMixin, View):
             }
             return render(self.request, "order_summary.html", context)
         except ObjectDoesNotExist:
-            messages.error(self.request, "You do not have an active order.")
+            messages.warning(self.request, "You do not have an active order.")
             return redirect("/")
 
 class ItemDetailView(DetailView):
@@ -84,17 +84,21 @@ class CheckoutView(View):
                     messages.warning(self.request, "Invalid payment option selected.")
                     return redirect("core:checkout")
         except ObjectDoesNotExist:
-            messages.error(self.request, "You do not have an active order.")
+            messages.warning(self.request, "You do not have an active order.")
             return redirect("core:order-summary")
 
 class PaymentView(View):
     def get(self, *args, **kwargs):
         order  = Order.objects.get(user=self.request.user, ordered=False)
-        context = {
-            "order": order,
-            "DISPLAY_COUPON_FORM": False,
-        }
-        return render(self.request, "payment.html", context)
+        if order.billing_address:
+            context = {
+                "order": order,
+                "DISPLAY_COUPON_FORM": False,
+            }
+            return render(self.request, "payment.html", context)
+        else:
+            messages.warning(self.request, "You have not add a billing address")
+            return redirect("core:checkout")
 
     def post(self, *args, **kwargs):
         order  = Order.objects.get(user=self.request.user, ordered=False)
@@ -129,27 +133,27 @@ class PaymentView(View):
             return redirect("/")
 
         except stripe.error.CardError as e:
-            messages.error(self.request, f"{e.error.message}")
+            messages.warning(self.request, f"{e.error.message}")
             return redirect("/")
         except stripe.error.RateLimitError as e:
-            messages.error(self.request, "Rate limit error")
+            messages.warning(self.request, "Rate limit error")
             return redirect("/")
         except stripe.error.InvalidRequestError as e:
-            messages.error(self.request, f"{e.error.message}")
-            messages.error(self.request, "Invalid parameters")
+            messages.warning(self.request, f"{e.error.message}")
+            messages.warning(self.request, "Invalid parameters")
             return redirect("/")
         except stripe.error.AuthenticationError as e:
-            messages.error(self.request, "Not authenticated")
+            messages.warning(self.request, "Not authenticated")
             return redirect("/")
         except stripe.error.APIConnectionError as e:
-            messages.error(self.request, "Network error")
+            messages.warning(self.request, "Network error")
             return redirect("/")
         except stripe.error.StripeError as e:
-            messages.error(self.request, "Something went wrong. You are not charged. Please try again.")
+            messages.warning(self.request, "Something went wrong. You are not charged. Please try again.")
             return redirect("/")
         except Exception as e:
             # send an email to ourselves
-            messages.error(self.request, "A serious error occured. We have been notified")
+            messages.warning(self.request, "A serious error occured. We have been notified")
             return redirect("/")
 
 def products(request):
