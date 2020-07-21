@@ -4,7 +4,24 @@ from .models import Item, OrderItem, Order, Payment, Coupon
 # Register your models here.
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ["user", "ordered"]
+    list_display        = ["user",
+                           "ordered",
+                           "being_delivered",
+                           "received",
+                           "refund_requested",
+                           "refund_granted",
+                           "billing_address",
+                           "payment",
+                           "coupon"]
+    list_display_links  = ["user",
+                           "billing_address",
+                           "payment",
+                           "coupon"]
+    list_filter         = ["ordered",
+                           "being_delivered",
+                           "received",
+                           "refund_requested",
+                           "refund_granted"]
 
 admin.site.register(Item)
 admin.site.register(OrderItem)
