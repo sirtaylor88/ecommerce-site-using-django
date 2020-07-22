@@ -51,7 +51,7 @@
 
         {% include 'components/flashes.html' %}
 
-        {% block content  %}
+        {% block content %}
         {% endblock %}
 
         {% block extra_body %}
@@ -60,5 +60,8 @@
         {% include 'components/footer.html' %}
 
         {% include 'scripts.html' %}
+
+        {% block extra_scripts %}
+        {% endblock %}
     </body>
 </html>
