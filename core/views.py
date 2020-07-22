@@ -7,9 +7,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, View
 from django.utils import timezone
 
-from .forms import CheckoutForm, CouponForm, RefundForm
+from .forms import CheckoutForm, CouponForm, RefundForm, PaymentForm
 
-from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund
+from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile
 
 import random
 import string
@@ -216,29 +216,74 @@ class PaymentView(View):
             user    = self.request.user,
             ordered = False
         )
+
         if order.billing_address:
             context = {
                 "order": order,
-                "DISPLAY_COUPON_FORM": False,
+                "DISPLAY_COUPON_FORM": False
             }
+            user_profile = self.request.user.userprofile
+            if user_profile.one_click_purchasing:
+                # fetch the user card list
+                cards = stripe.Customer.list_sources(
+                    user_profile.stripe_customer_id,
+                    limit  = 3,
+                    object = "card"
+                )
+                card_list = cards["data"]
+                if len(card_list) > 0:
+                    # update the context with default card
+                    context.update({"card": card_list[0]})
+
             return render(self.request, "payment.html", context)
         else:
             messages.warning(self.request, "You have not add a billing address")
             return redirect("core:checkout")
 
     def post(self, *args, **kwargs):
-        order  = Order.objects.get(
+        order        = Order.objects.get(
             user    = self.request.user,
             ordered = False
         )
-        token  = self.request.POST.get("stripeToken")
+        form         = PaymentForm(self.request.POST)
+        user_profile = UserProfile.objects.get(user = self.request.user)
+
+        if form.is_valid():
+            print(form.cleaned_data)
+            token       = self.request.POST.get("stripeToken")
+            save        = form.cleaned_data.get("save")
+            use_default = form.cleaned_data.get("use_default")
+
+            if save:
+                # allow to fetch cards
+                if not user_profile.stripe_customer_id:
+                    customer = stripe.Customer.create(
+                        email  = self.request.user.email,
+                        source = token
+                    )
+                    user_profile.stripe_customer_id   = customer["id"]
+                    user_profile.one_click_purchasing = True
+                    user_profile.save()
+                else:
+                    stripe.Customer.create_source(
+                        user_profile.stripe_customer_id,
+                        source = token
+                    )
+            amount = int(order.get_total() * 100) # cents
 
         try:
-            charge = stripe.Charge.create(
-                amount        = int(order.get_total() * 100), # value in cents
-                currency      = "eur",
-                source        = token
-            )
+            if use_default:
+                charge = stripe.Charge.create(
+                    amount        = amount, # cents
+                    currency      = "eur",
+                    customer      = user_profile.stripe_customer_id
+                )
+            else:
+                charge = stripe.Charge.create(
+                    amount        = amount, # cents
+                    currency      = "eur",
+                    source        = token
+                )
             # create the payment
             payment = Payment(
                 stripe_charge_id = charge["id"],
@@ -282,6 +327,7 @@ class PaymentView(View):
             messages.warning(self.request, "Something went wrong. You are not charged. Please try again.")
             return redirect("/")
         except Exception as e:
+            messages.warning(self.request, f"{e.error.message}")
             # send an email to ourselves
             messages.warning(self.request, "A serious error occured. We have been notified")
             return redirect("/")
